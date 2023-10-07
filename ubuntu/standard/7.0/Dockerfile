@@ -107,14 +107,6 @@ ARG N_SRC_DIR="$SRC_DIR/n"
 RUN git clone https://github.com/tj/n $N_SRC_DIR \
      && cd $N_SRC_DIR && make install 
 
-#python
-RUN curl https://pyenv.run | bash
-ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
-
-#php
-RUN curl -L https://raw.githubusercontent.com/phpenv/phpenv-installer/master/bin/phpenv-installer | bash
-ENV PATH="/root/.phpenv/shims:/root/.phpenv/bin:$PATH"
-
 #go
 RUN git clone https://github.com/syndbg/goenv.git $HOME/.goenv
 ENV PATH="/root/.goenv/shims:/root/.goenv/bin:/go/bin:$PATH"
@@ -136,35 +128,6 @@ RUN  n $NODE_18_VERSION && npm install --save-dev -g -f grunt && npm install --s
      && cd / && rm -rf $N_SRC_DIR && rm -rf /tmp/*
 
 #****************      END NODEJS     ****************************************************
-
-#**************** PYTHON *****************************************************
-ENV PYTHON_311_VERSION="3.11.4"
-
-ARG PYTHON_PIP_VERSION=23.1.1
-ENV PYYAML_VERSION=5.4.1
-
-COPY tools/runtime_configs/python/$PYTHON_311_VERSION /root/.pyenv/plugins/python-build/share/python-build/$PYTHON_311_VERSION
-RUN env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $PYTHON_311_VERSION && rm -rf /tmp/*
-RUN pyenv global $PYTHON_311_VERSION
-RUN set -ex \
-    && pip3 install --no-cache-dir --upgrade --force-reinstall "pip==$PYTHON_PIP_VERSION" \
-    && pip3 install wheel \
-    && pip3 install --no-build-isolation "Cython<3" "PyYAML==$PYYAML_VERSION" \
-    && pip3 install --no-cache-dir --upgrade 'setuptools==67.7.2' aws-sam-cli boto3 pipenv virtualenv \
-    && pip3 uninstall cython --yes
-
-#**************** END PYTHON *****************************************************
-
-#****************      PHP     ****************************************************
-ENV PHP_82_VERSION="8.2.7"
-
-COPY tools/runtime_configs/php/$PHP_82_VERSION /root/.phpenv/plugins/php-build/share/php-build/definitions/$PHP_82_VERSION
-RUN phpenv install $PHP_82_VERSION && rm -rf /tmp/* && phpenv global $PHP_82_VERSION
-RUN echo "memory_limit = 1G;" >> "/root/.phpenv/versions/$PHP_82_VERSION/etc/conf.d/memory.ini"
-
-# Install Composer globally
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
-#****************      END PHP     ****************************************************
 
 #****************     GOLANG     ****************************************************
 ENV GOLANG_20_VERSION="1.20.5"
@@ -314,8 +277,6 @@ FROM runtimes_n_corretto AS std_v7
 
 # Activate runtime versions specific to image version.
 RUN n $NODE_18_VERSION
-RUN pyenv global $PYTHON_311_VERSION
-RUN phpenv global $PHP_82_VERSION
 RUN goenv global $GOLANG_20_VERSION
 
 # Configure SSH
