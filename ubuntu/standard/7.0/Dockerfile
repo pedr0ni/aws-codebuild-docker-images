@@ -16,21 +16,21 @@ ARG DEBIAN_FRONTEND="noninteractive"
 RUN set -ex \
     && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
     && apt-get update \
-    && apt install -y -qq apt-transport-https gnupg ca-certificates \
+    && apt install -y apt-transport-https gnupg ca-certificates \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF \
-    && apt-get install software-properties-common -y -qq --no-install-recommends \
+    && apt-get install software-properties-common -y --no-install-recommends \
     && apt-add-repository -y ppa:git-core/ppa \
     && apt-get update \
-    && apt-get install git=1:2.* -y -qq --no-install-recommends \
+    && apt-get install git=1:2.* -y --no-install-recommends \
     && git version \
-    && apt-get install -y -qq --no-install-recommends openssh-client \
+    && apt-get install -y --no-install-recommends openssh-client \
     && mkdir ~/.ssh \
     && mkdir -p /codebuild/image/config \
     && touch ~/.ssh/known_hosts \
     && ssh-keyscan -t rsa,dsa,ed25519,ecdsa -H github.com >> ~/.ssh/known_hosts \
     && ssh-keyscan -t rsa,dsa,ed25519,ecdsa -H bitbucket.org >> ~/.ssh/known_hosts \
     && chmod 600 ~/.ssh/known_hosts \
-    && apt-get install -y -qq --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
           apt-utils asciidoc autoconf automake build-essential bzip2 \
           bzr curl dirmngr docbook-xml docbook-xsl dpkg-dev \
           e2fsprogs expect fakeroot file g++ gcc gettext gettext-base \
@@ -112,18 +112,6 @@ ARG N_SRC_DIR="$SRC_DIR/n"
 RUN git clone https://github.com/tj/n $N_SRC_DIR \
      && cd $N_SRC_DIR && make install 
 
-#ruby
-ARG RBENV_SRC_DIR="/usr/local/rbenv"
-
-ENV PATH="/root/.rbenv/shims:$RBENV_SRC_DIR/bin:$RBENV_SRC_DIR/shims:$PATH" \
-    RUBY_BUILD_SRC_DIR="$RBENV_SRC_DIR/plugins/ruby-build"
-
-RUN set -ex \
-    && git clone https://github.com/rbenv/rbenv.git $RBENV_SRC_DIR \
-    && mkdir -p $RBENV_SRC_DIR/plugins \
-    && git clone https://github.com/rbenv/ruby-build.git $RUBY_BUILD_SRC_DIR \
-    && sh $RUBY_BUILD_SRC_DIR/install.sh
-
 #python
 RUN curl https://pyenv.run | bash
 ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
@@ -184,20 +172,11 @@ ENV NODE_18_VERSION="18.16.1"
 RUN  n $NODE_18_VERSION && npm install --save-dev -g -f grunt && npm install --save-dev -g -f grunt-cli && npm install --save-dev -g -f webpack \
      && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
      && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-     && apt-get update && apt-get install -y -qq --no-install-recommends yarn \
+     && apt-get update && apt-get install -y --no-install-recommends yarn \
      && yarn --version \
      && cd / && rm -rf $N_SRC_DIR && rm -rf /tmp/*
 
 #****************      END NODEJS     ****************************************************
-
-#**************** RUBY *********************************************************
-
-ENV RUBY_32_VERSION="3.2.2"
-
-RUN rbenv install $RUBY_32_VERSION && rm -rf /tmp/* \
-    && rbenv global $RUBY_32_VERSION && ruby -v
-
-#**************** END RUBY *****************************************************
 
 #**************** PYTHON *****************************************************
 ENV PYTHON_311_VERSION="3.11.4"
@@ -266,13 +245,13 @@ ENV PATH="${PATH}:/opt/tools"
 
 RUN set -ex \
     && apt-get update \
-    && apt-get install -y -qq software-properties-common apt-utils \
+    && apt-get install -y software-properties-common apt-utils \
     # Install Corretto 17
     && wget -qO- https://apt.corretto.aws/corretto.key | apt-key add - \
     && add-apt-repository 'deb https://apt.corretto.aws stable main' \
     && apt-get update \
-    && apt-get install -y -qq java-17-amazon-corretto-jdk \
-    && apt-get install -y -qq --no-install-recommends ca-certificates-java \
+    && apt-get install -y java-17-amazon-corretto-jdk \
+    && apt-get install -y --no-install-recommends ca-certificates-java \
     # Ensure Java cacerts symlink points to valid location
     && update-ca-certificates -f \
     && dpkg --add-architecture i386 \
@@ -378,7 +357,6 @@ FROM runtimes_n_corretto AS std_v7
 RUN n $NODE_18_VERSION
 RUN pyenv global $PYTHON_311_VERSION
 RUN phpenv global $PHP_82_VERSION
-RUN rbenv global $RUBY_32_VERSION
 RUN goenv global $GOLANG_20_VERSION
 
 # Configure SSH
