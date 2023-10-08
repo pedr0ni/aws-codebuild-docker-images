@@ -15,22 +15,22 @@ ARG DEBIAN_FRONTEND="noninteractive"
 # Install git, SSH, and other utilities
 RUN set -ex \
     && echo 'Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/99use-gzip-compression \
-    && apt-get update \
+    && apt update \
     && apt install -y apt-transport-https gnupg ca-certificates \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF \
-    && apt-get install software-properties-common -y --no-install-recommends \
+    && apt install software-properties-common -y --no-install-recommends \
     && apt-add-repository -y ppa:git-core/ppa \
-    && apt-get update \
-    && apt-get install git=1:2.* -y --no-install-recommends \
+    && apt update \
+    && apt install git=1:2.* -y --no-install-recommends \
     && git version \
-    && apt-get install -y --no-install-recommends openssh-client \
+    && apt install -y --no-install-recommends openssh-client \
     && mkdir ~/.ssh \
     && mkdir -p /codebuild/image/config \
     && touch ~/.ssh/known_hosts \
     && ssh-keyscan -t rsa,dsa,ed25519,ecdsa -H github.com >> ~/.ssh/known_hosts \
     && ssh-keyscan -t rsa,dsa,ed25519,ecdsa -H bitbucket.org >> ~/.ssh/known_hosts \
     && chmod 600 ~/.ssh/known_hosts \
-    && apt-get install -y --no-install-recommends \
+    && apt install -y --no-install-recommends \
           apt-utils asciidoc autoconf automake build-essential bzip2 \
           bzr curl dirmngr docbook-xml docbook-xsl dpkg-dev \
           e2fsprogs expect fakeroot file g++ gcc gettext gettext-base \
@@ -123,7 +123,7 @@ ENV NODE_18_VERSION="18.16.1"
 RUN  n $NODE_18_VERSION && npm install --save-dev -g -f grunt && npm install --save-dev -g -f grunt-cli && npm install --save-dev -g -f webpack \
      && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
      && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-     && apt-get update && apt-get install -y --no-install-recommends yarn \
+     && apt update && apt install -y --no-install-recommends yarn \
      && yarn --version \
      && cd / && rm -rf $N_SRC_DIR && rm -rf /tmp/*
 
