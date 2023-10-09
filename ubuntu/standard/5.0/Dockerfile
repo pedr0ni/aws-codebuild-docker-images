@@ -139,20 +139,6 @@ ARG N_SRC_DIR="$SRC_DIR/n"
 RUN git clone https://github.com/tj/n $N_SRC_DIR \
      && cd $N_SRC_DIR && make install 
 
-#python
-RUN curl https://pyenv.run | bash
-ENV PATH="/root/.pyenv/shims:/root/.pyenv/bin:$PATH"
-
-#php
-RUN curl -L https://raw.githubusercontent.com/phpenv/phpenv-installer/master/bin/phpenv-installer | bash
-ENV PATH="/root/.phpenv/shims:/root/.phpenv/bin:$PATH"
-
-#go
-RUN git clone https://github.com/syndbg/goenv.git $HOME/.goenv
-ENV PATH="/root/.goenv/shims:/root/.goenv/bin:/go/bin:$PATH"
-ENV GOENV_DISABLE_GOPATH=1
-ENV GOPATH="/go"
-
 #=======================End of layer: tools  =================
 FROM tools AS runtimes
 
@@ -168,74 +154,6 @@ RUN  n $NODE_18_VERSION && npm install --save-dev -g -f grunt && npm install --s
      && cd / && rm -rf $N_SRC_DIR && rm -rf /tmp/*
 
 #****************      END NODEJS     ****************************************************
-
-#**************** PYTHON *****************************************************
-ENV PYTHON_37_VERSION="3.7.17"
-ENV PYTHON_38_VERSION="3.8.17"
-ENV PYTHON_39_VERSION="3.9.17"
-
-ARG PYTHON_PIP_VERSION=21.3.1
-ENV PYYAML_VERSION=5.4.1
-
-COPY tools/runtime_configs/python/$PYTHON_37_VERSION /root/.pyenv/plugins/python-build/share/python-build/$PYTHON_37_VERSION
-RUN   env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $PYTHON_37_VERSION && rm -rf /tmp/*
-RUN   pyenv global  $PYTHON_37_VERSION
-RUN set -ex \
-    && pip3 install --no-cache-dir --upgrade --force-reinstall "pip==$PYTHON_PIP_VERSION" \
-    && pip3 install --no-cache-dir --upgrade "PyYAML==$PYYAML_VERSION" \
-    && pip3 install --no-cache-dir --upgrade 'setuptools==57.5.0' wheel aws-sam-cli boto3 pipenv virtualenv --use-feature=2020-resolver
-
-COPY tools/runtime_configs/python/$PYTHON_38_VERSION /root/.pyenv/plugins/python-build/share/python-build/$PYTHON_38_VERSION
-RUN   env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $PYTHON_38_VERSION && rm -rf /tmp/*
-RUN   pyenv global  $PYTHON_38_VERSION
-RUN set -ex \
-    && pip3 install --no-cache-dir --upgrade --force-reinstall "pip==$PYTHON_PIP_VERSION" \
-    && pip3 install --no-cache-dir --upgrade "PyYAML==$PYYAML_VERSION" \
-    && pip3 install --no-cache-dir --upgrade 'setuptools==57.5.0' wheel aws-sam-cli boto3 pipenv virtualenv --use-feature=2020-resolver
-
-COPY tools/runtime_configs/python/$PYTHON_39_VERSION /root/.pyenv/plugins/python-build/share/python-build/$PYTHON_39_VERSION
-RUN   env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $PYTHON_39_VERSION && rm -rf /tmp/*
-RUN   pyenv global  $PYTHON_39_VERSION
-RUN set -ex \
-    && pip3 install --no-cache-dir --upgrade --force-reinstall "pip==$PYTHON_PIP_VERSION" \
-    && pip3 install --no-cache-dir --upgrade "PyYAML==$PYYAML_VERSION" \
-    && pip3 install --no-cache-dir --upgrade 'setuptools==57.5.0' wheel aws-sam-cli boto3 pipenv virtualenv --use-feature=2020-resolver
-
-#**************** END PYTHON *****************************************************
-
-#****************      PHP     ****************************************************
-ENV PHP_73_VERSION="7.3.33"
-ENV PHP_74_VERSION="7.4.33"
-ENV PHP_80_VERSION="8.0.29"
-
-RUN curl -L https://raw.githubusercontent.com/phpenv/phpenv-installer/master/bin/phpenv-installer | bash
-ENV PATH="/root/.phpenv/shims:/root/.phpenv/bin:$PATH"
-COPY tools/runtime_configs/php/$PHP_73_VERSION /root/.phpenv/plugins/php-build/share/php-build/definitions/$PHP_73_VERSION
-RUN phpenv install $PHP_73_VERSION && rm -rf /tmp/* && phpenv global $PHP_73_VERSION
-RUN echo "memory_limit = 1G;" >> "/root/.phpenv/versions/$PHP_73_VERSION/etc/conf.d/memory.ini"
-
-COPY tools/runtime_configs/php/$PHP_74_VERSION /root/.phpenv/plugins/php-build/share/php-build/definitions/$PHP_74_VERSION
-RUN phpenv install $PHP_74_VERSION && rm -rf /tmp/* && phpenv global $PHP_74_VERSION
-RUN echo "memory_limit = 1G;" >> "/root/.phpenv/versions/$PHP_74_VERSION/etc/conf.d/memory.ini"
-
-COPY tools/runtime_configs/php/$PHP_80_VERSION /root/.phpenv/plugins/php-build/share/php-build/definitions/$PHP_80_VERSION
-RUN phpenv install $PHP_80_VERSION && rm -rf /tmp/* && phpenv global $PHP_80_VERSION
-RUN echo "memory_limit = 1G;" >> "/root/.phpenv/versions/$PHP_80_VERSION/etc/conf.d/memory.ini"
-
-# Install Composer globally
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
-#****************      END PHP     ****************************************************
-
-#****************     GOLANG     ****************************************************
-ENV GOLANG_15_VERSION="1.15.15"
-ENV GOLANG_16_VERSION="1.16.15"
-
-RUN goenv install $GOLANG_15_VERSION && rm -rf /tmp/* && \
-    goenv install $GOLANG_16_VERSION && rm -rf /tmp/* && \
-    goenv global  $GOLANG_15_VERSION
-
-RUN go get -u github.com/golang/dep/cmd/dep
-#****************      END GOLANG     *******************************
 
 #=======================End of layer: runtimes  =================
 
@@ -380,9 +298,6 @@ FROM runtimes_n_corretto AS std_v5
 
 # Activate runtime versions specific to image version.
 RUN n $NODE_18_VERSION
-RUN pyenv  global $PYTHON_39_VERSION
-RUN phpenv global $PHP_80_VERSION
-RUN goenv global  $GOLANG_15_VERSION
 
 # Configure SSH
 COPY ssh_config /root/.ssh/config
