@@ -133,29 +133,11 @@ RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscli
     && aws --version
 
 # Install env tools for runtimes
-# Dotnet
-ENV PATH "/root/.dotnet/:/root/.dotnet/tools/:$PATH"
-RUN set -ex  \
-&& wget -qO /usr/local/bin/dotnet-install.sh https://dot.net/v1/dotnet-install.sh \
-&& chmod +x /usr/local/bin/dotnet-install.sh
-
 #nodejs
 ARG SRC_DIR="/usr/src"
 ARG N_SRC_DIR="$SRC_DIR/n"
 RUN git clone https://github.com/tj/n $N_SRC_DIR \
      && cd $N_SRC_DIR && make install 
-
-#ruby
-ARG RBENV_SRC_DIR="/usr/local/rbenv"
-
-ENV PATH="/root/.rbenv/shims:$RBENV_SRC_DIR/bin:$RBENV_SRC_DIR/shims:$PATH" \
-    RUBY_BUILD_SRC_DIR="$RBENV_SRC_DIR/plugins/ruby-build"
-
-RUN set -ex \
-    && git clone https://github.com/rbenv/rbenv.git $RBENV_SRC_DIR \
-    && mkdir -p $RBENV_SRC_DIR/plugins \
-    && git clone https://github.com/rbenv/ruby-build.git $RUBY_BUILD_SRC_DIR \
-    && sh $RUBY_BUILD_SRC_DIR/install.sh
 
 #python
 RUN curl https://pyenv.run | bash
@@ -174,73 +156,18 @@ ENV GOPATH="/go"
 #=======================End of layer: tools  =================
 FROM tools AS runtimes
 
-#****************     .NET-CORE     *******************************************************
-
-ENV DOTNET_31_SDK_VERSION="3.1.426"
-ENV DOTNET_5_SDK_VERSION="5.0.408"
-ENV DOTNET_ROOT="/root/.dotnet"
-
-# Add .NET Core 3.1 Global Tools install folder to PATH
-RUN  /usr/local/bin/dotnet-install.sh -v $DOTNET_31_SDK_VERSION \
-     && dotnet --list-sdks \
-     && rm -rf /tmp/*
-
-# Add .NET Core 5 Global Tools install folder to PATH
-RUN  /usr/local/bin/dotnet-install.sh -v $DOTNET_5_SDK_VERSION \
-     && dotnet --list-sdks \
-     && rm -rf /tmp/*
-
-# Trigger the population of the local package cache
-ENV NUGET_XMLDOC_MODE skip
-RUN set -ex \
-    && mkdir warmup \
-    && cd warmup \
-    && dotnet new \
-    && cd .. \
-    && rm -rf warmup \
-    && rm -rf /tmp/NuGetScratch
-
-# Install Powershell Core
-# See instructions at https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux
-ARG POWERSHELL_VERSION=7.3.4
-ARG POWERSHELL_DOWNLOAD_URL=https://github.com/PowerShell/PowerShell/releases/download/v$POWERSHELL_VERSION/powershell-$POWERSHELL_VERSION-linux-x64.tar.gz
-ARG POWERSHELL_DOWNLOAD_SHA=E85D5544E13A924F8B2C4A5DC2D43ABE46E46633F89E8D138D39C0AAEACB9976
-
-RUN set -ex \
-    && curl -SL $POWERSHELL_DOWNLOAD_URL --output powershell.tar.gz \
-    && echo "$POWERSHELL_DOWNLOAD_SHA powershell.tar.gz" | sha256sum -c - \
-    && mkdir -p /opt/microsoft/powershell/$POWERSHELL_VERSION \
-    && tar zxf powershell.tar.gz -C /opt/microsoft/powershell/$POWERSHELL_VERSION \
-    && rm powershell.tar.gz \
-    && ln -s /opt/microsoft/powershell/$POWERSHELL_VERSION/pwsh /usr/bin/pwsh
-#****************     END .NET-CORE     *******************************************************
-
-
 #****************      NODEJS     ****************************************************
 
-ENV NODE_12_VERSION="12.22.12"
-ENV NODE_14_VERSION="14.21.3"
+ENV NODE_18_VERSION="18.16.1"
 
-RUN     n $NODE_14_VERSION && npm install --save-dev -g -f grunt && npm install --save-dev -g -f grunt-cli && npm install --save-dev -g -f webpack \
-     && n $NODE_12_VERSION && npm install --save-dev -g -f grunt && npm install --save-dev -g -f grunt-cli && npm install --save-dev -g -f webpack \
+RUN  n $NODE_18_VERSION && npm install --save-dev -g -f grunt && npm install --save-dev -g -f grunt-cli && npm install --save-dev -g -f webpack \
      && curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add - \
      && echo "deb https://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list \
-     && apt-get update && apt-get install -y --no-install-recommends yarn \
+     && apt update && apt install -y --no-install-recommends yarn \
      && yarn --version \
      && cd / && rm -rf $N_SRC_DIR && rm -rf /tmp/*
 
 #****************      END NODEJS     ****************************************************
-
-#**************** RUBY *********************************************************
-
-ENV RUBY_26_VERSION="2.6.10"
-ENV RUBY_27_VERSION="2.7.8"
-
-RUN rbenv install $RUBY_26_VERSION && rm -rf /tmp/* \
-    && rbenv install $RUBY_27_VERSION && rm -rf /tmp/* \
-    && rbenv global $RUBY_27_VERSION && ruby -v
-
-#**************** END RUBY *****************************************************
 
 #**************** PYTHON *****************************************************
 ENV PYTHON_37_VERSION="3.7.17"
@@ -452,10 +379,9 @@ VOLUME /var/lib/docker
 FROM runtimes_n_corretto AS std_v5
 
 # Activate runtime versions specific to image version.
-RUN n $NODE_14_VERSION
+RUN n $NODE_18_VERSION
 RUN pyenv  global $PYTHON_39_VERSION
 RUN phpenv global $PHP_80_VERSION
-RUN rbenv  global $RUBY_27_VERSION
 RUN goenv global  $GOLANG_15_VERSION
 
 # Configure SSH
